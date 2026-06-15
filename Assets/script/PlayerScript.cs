@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement; // เพิ่มไลบรารีนี้เพื่อใช้สำหรับเปลี่ยน Scene
 
 public class PlayerScript : MonoBehaviour
 {
@@ -14,12 +15,24 @@ public class PlayerScript : MonoBehaviour
     Rigidbody2D RB;
 
     [Header("SoundSensor")]
-    public int jumpSoundThreshold; // ความดังเสียงที่ต้องใช้กระโดด (ปรับเพิ่มลดได้ตามความไวของเซนเซอร์)
+    public int jumpSoundThreshold;
+
+    [Header("Game Over UI")]
+    public GameObject gameOverPanel; // ประกาศตัวแปรรับหน้าต่าง Game Over
 
     private void Awake()
     {
         RB = GetComponent<Rigidbody2D>();
         score = 0;
+
+        // คืนค่าเวลาให้เป็นปกติทุกครั้งที่เริ่มเกมใหม่
+        Time.timeScale = 1;
+
+        // ซ่อนหน้าต่าง Game Over ไว้ก่อนตอนเริ่มเกม
+        if (gameOverPanel != null)
+        {
+            gameOverPanel.SetActive(false);
+        }
     }
 
     void Update()
@@ -55,10 +68,33 @@ public class PlayerScript : MonoBehaviour
             }
         }
 
+        // เช็ค tag ว่าเป็น "spike" (หรือถ้าต้นไม้ใช้ tag อื่นให้เปลี่ยนตรงนี้ เช่น "tree")
+        // เช็ค tag ว่าเป็น "spike"
         if (collision.gameObject.CompareTag("spike"))
         {
             isAlive = false;
-            Time.timeScale = 0;
+
+            // 1. สั่งเซฟ CSV
+            if (GameDataLogger.instance != null) GameDataLogger.instance.SaveToCSV();
+
+            // 2. แสดงหน้าต่าง Game Over
+            if (gameOverPanel != null)
+            {
+                gameOverPanel.SetActive(true);
+
+                // 3. สั่งวาดกราฟ
+                SimpleGraphUI graphUI = gameOverPanel.GetComponent<SimpleGraphUI>();
+                if (graphUI != null) graphUI.DrawGraph();
+            }
+
+            Time.timeScale = 0; // หยุดเกม
         }
+    }
+
+    // ฟังก์ชันนี้จะถูกเรียกใช้เมื่อกดปุ่ม Restart
+    public void RestartGame()
+    {
+        // โหลด Scene ที่ 0 เพื่อเริ่มเกมใหม่
+        SceneManager.LoadScene(0);
     }
 }
