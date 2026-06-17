@@ -11,6 +11,7 @@ public class GameDataLogger : MonoBehaviour
     [System.Serializable]
     public class DataPoint
     {
+        public string timestamp;
         public float time;
         public int sound;
         public float temp;
@@ -43,7 +44,8 @@ public class GameDataLogger : MonoBehaviour
     void RecordData()
     {
         DataPoint dp = new DataPoint();
-        dp.time = Time.timeSinceLevelLoad; // เวลาตั้งแต่เริ่มด่าน
+        dp.timestamp = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        dp.time = Time.timeSinceLevelLoad; 
         dp.sound = ArduinoController.instance.soundLevel;
         dp.temp = ArduinoController.instance.temperature;
         dp.hum = ArduinoController.instance.humidity;
@@ -54,19 +56,24 @@ public class GameDataLogger : MonoBehaviour
     public void SaveToCSV()
     {
         isRecording = false; // หยุดเก็บข้อมูล
+        string folderpath = Path.Combine(Application.dataPath, "CSV");
+        string filename = "GameData_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss") + ".csv";
 
-        // ตั้งชื่อไฟล์ตามวันเวลา จะได้ไม่ทับกัน
-        string filename = "GameData_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".csv";
-        string filePath = Path.Combine(Application.dataPath, filename); // เซฟไว้ในโฟลเดอร์ Assets
+        if (!Directory.Exists(folderpath))
+        {
+            Directory.CreateDirectory(folderpath);
+        }
+        string filepath = Path.Combine(folderpath, filename);
 
-        using (StreamWriter writer = new StreamWriter(filePath))
+
+        using (StreamWriter writer = new StreamWriter(filepath))
         {
             writer.WriteLine("Time(s),SoundLevel,Temperature,Humidity"); // หัวตาราง
             foreach (DataPoint dp in sessionData)
             {
-                writer.WriteLine($"{dp.time:F2},{dp.sound},{dp.temp:F2},{dp.hum:F2}");
+                writer.WriteLine($"{dp.timestamp:F1},{dp.time:F2},{dp.sound},{dp.temp:F2},{dp.hum:F2}");
             }
         }
-        Debug.Log("เซฟไฟล์ CSV เรียบร้อยที่: " + filePath);
+        Debug.Log("CSV savecomplete" + filepath);
     }
 }
